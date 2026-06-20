@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#16130F" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="C&S HQ" />
 <title>Copper &amp; Steel HQ — Sitter Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -200,6 +205,21 @@
 
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   :focus-visible{outline:2px solid var(--copper-lt);outline-offset:2px;border-radius:6px}
+
+  /* ---------- Ended / expired screen ---------- */
+  .ended-wrap{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px 28px;gap:14px;
+  }
+  .ended-wrap .mark{
+    width:64px;height:64px;border-radius:18px;
+    background:linear-gradient(135deg,var(--copper),var(--steel));
+    display:grid;place-items:center;margin-bottom:6px;
+  }
+  .ended-wrap h1{font-family:'Fraunces',serif;font-size:26px;font-weight:600}
+  .ended-wrap p{color:var(--cream-dim);font-size:15px;max-width:340px;line-height:1.6}
+  .ended-wrap .seam{height:2px;width:120px;border-radius:2px;margin-top:8px;
+    background:linear-gradient(90deg,var(--copper),var(--steel))}
 </style>
 </head>
 <body>
@@ -495,30 +515,21 @@ const DATA = {
 /* ▲▲▲  END OF EDITABLE SECTION — you don't need to touch anything below.  */
 
 
-/* ---------- render ---------- */
+/* ---------- setup ---------- */
 const $ = s => document.querySelector(s);
 const tel = p => (p||'').replace(/[^\d+]/g,'');
-
 function chunkPhoneOk(p){ return tel(p).length >= 7; }
 
-document.title = 'Copper & Steel HQ';
-$('#hdrTitle').innerHTML = DATA.home.title;
-$('#hdrEyebrow').textContent = DATA.home.sitterName + ' — here\'s everything';
-$('#hdrTrip').innerHTML =
-  `<span class="pill"><b>${DATA.home.tripStart} – ${DATA.home.tripEnd}</b></span>`+
-  `<span class="pill">We're in <b>${DATA.home.destination}</b></span>`+
-  `<span class="pill">${DATA.home.tzNote}</span>`;
-$('#todaySub').textContent = 'Same gentle routine every day. Tap items off as you go.';
+/* =========================================================
+   GUIDE EXPIRY — the kill-switch.
+   After this date/time the app locks itself on any phone
+   (even offline) and hides all your info. Edit it to end the
+   guide early or to extend it. Format: 'YYYY-MM-DDTHH:MM:SS'
+   ========================================================= */
+const VALID_THROUGH = '2026-07-10T23:59:00';
+const EXPIRED = new Date() > new Date(VALID_THROUGH);
 
-// timeline
-$('#timeline').innerHTML = DATA.timeline.map(t=>`
-  <div class="tl-item">
-    <div class="tl-time">${t[0]}</div>
-    <div class="tl-title">${t[1]}</div>
-    <div class="tl-body">${t[2]}</div>
-  </div>`).join('');
-
-// checklist (in-memory; resets on reload)
+/* ---------- interactive handlers (kept global for onclick) ---------- */
 const checkState = DATA.checklist.map(()=>false);
 function renderChecks(){
   $('#checklist').innerHTML = DATA.checklist.map((c,i)=>`
@@ -529,37 +540,6 @@ function renderChecks(){
 }
 function toggleCheck(i){ checkState[i]=!checkState[i]; renderChecks(); }
 function resetChecks(){ checkState.fill(false); renderChecks(); }
-renderChecks();
-/*  ↑ Want check-offs to survive a refresh once it's live on GitHub?
-    After hosting, swap the line above for localStorage like this:
-    const saved = JSON.parse(localStorage.getItem('cs')||'[]');
-    DATA.checklist.forEach((_,i)=>checkState[i]=!!saved[i]);
-    and inside toggleCheck/resetChecks add:
-    localStorage.setItem('cs', JSON.stringify(checkState));            */
-
-// dog cards
-$('#dogCards').innerHTML = DATA.dogs.map(d=>`
-  <div class="card dog ${d.metal}">
-    <div class="dog-name">${d.name}<span class="chip ${d.metal}">${d.metal}</span></div>
-    <div style="margin-top:12px">
-      ${d.facts.map(f=>`<div class="row"><span class="k">${f[0]}</span><span class="v">${f[1]}</span></div>`).join('')}
-    </div>
-  </div>`).join('');
-
-const list = (id,arr)=> $(id).innerHTML = arr.map(x=>`<li>${x}</li>`).join('');
-list('#feeding', DATA.feeding);
-$('#feedingNote').textContent = DATA.feedingNote;
-list('#walks', DATA.walks);
-list('#care', DATA.care);
-list('#trash', DATA.home.trash);
-list('#climate', DATA.home.climate);
-list('#mail', DATA.home.mail);
-list('#knowhow', DATA.home.knowhow);
-list('#utilities', DATA.home.utilities);
-
-// wifi
-$('#wifiName').textContent = DATA.home.wifiName;
-$('#wifiPass').textContent = DATA.home.wifiPass;
 function copyPass(){
   navigator.clipboard?.writeText(DATA.home.wifiPass).then(()=>{
     const el=$('#wifiPass'); const o=el.textContent;
@@ -567,38 +547,110 @@ function copyPass(){
     setTimeout(()=>{el.textContent=o; el.classList.remove('copied');},1400);
   });
 }
-
-// contacts
-$('#contactsSub').textContent = 'One tap to call. We\'re reachable in '+DATA.home.destination+' — text is easiest.';
-$('#contactCards').innerHTML = DATA.contacts.map(c=>{
-  const phoneOk = chunkPhoneOk(c.phone);
-  let acts = '';
-  if(phoneOk){
-    acts += `<a class="btn call" href="tel:${tel(c.phone)}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Call</a>`;
-    if(c.text) acts += `<a class="btn" href="sms:${tel(c.phone)}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-3.8-.9L3 20l1.9-5.2A8.38 8.38 0 0 1 4 11.5a8.5 8.5 0 0 1 17 0z"/></svg>Text</a>`;
-  }
-  if(c.maps) acts += `<a class="btn" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(c.maps)}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Map</a>`;
-  return `<div class="card" style="${c.urgent?'border-color:var(--sos)':''}">
-    <h3 style="${c.urgent?'color:#F0A493':''}">${c.label}</h3>
-    <div class="note" style="margin-top:-4px">${c.sub||''} · ${c.phone}</div>
-    <div class="actions">${acts||'<span class="note">Add a phone number to enable calling.</span>'}</div>
-  </div>`;
-}).join('');
-
-// SOS call button -> emergency vet (4th contact)
-const erVet = DATA.contacts.find(c=>c.urgent) || DATA.contacts[0];
-$('#sosVet').href = chunkPhoneOk(erVet.phone) ? 'tel:'+tel(erVet.phone) : '#';
-
-// tabs
 function go(id, btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   $('#'+id).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   window.scrollTo({top:0,behavior:'instant'});
+}
+
+/* ---------- render the whole app ---------- */
+function renderApp(){
+  document.title = 'Copper & Steel HQ';
+  $('#hdrTitle').innerHTML = DATA.home.title;
+  $('#hdrEyebrow').textContent = DATA.home.sitterName + ' — here\'s everything';
+  $('#hdrTrip').innerHTML =
+    `<span class="pill"><b>${DATA.home.tripStart} – ${DATA.home.tripEnd}</b></span>`+
+    `<span class="pill">We're in <b>${DATA.home.destination}</b></span>`+
+    `<span class="pill">${DATA.home.tzNote}</span>`;
+  $('#todaySub').textContent = 'Same gentle routine every day. Tap items off as you go.';
+
+  $('#timeline').innerHTML = DATA.timeline.map(t=>`
+    <div class="tl-item">
+      <div class="tl-time">${t[0]}</div>
+      <div class="tl-title">${t[1]}</div>
+      <div class="tl-body">${t[2]}</div>
+    </div>`).join('');
+
+  renderChecks();
+
+  $('#dogCards').innerHTML = DATA.dogs.map(d=>`
+    <div class="card dog ${d.metal}">
+      <div class="dog-name">${d.name}<span class="chip ${d.metal}">${d.metal}</span></div>
+      <div style="margin-top:12px">
+        ${d.facts.map(f=>`<div class="row"><span class="k">${f[0]}</span><span class="v">${f[1]}</span></div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const list = (id,arr)=> $(id).innerHTML = arr.map(x=>`<li>${x}</li>`).join('');
+  list('#feeding', DATA.feeding);
+  $('#feedingNote').textContent = DATA.feedingNote;
+  list('#walks', DATA.walks);
+  list('#care', DATA.care);
+  list('#trash', DATA.home.trash);
+  list('#climate', DATA.home.climate);
+  list('#mail', DATA.home.mail);
+  list('#knowhow', DATA.home.knowhow);
+  list('#utilities', DATA.home.utilities);
+
+  $('#wifiName').textContent = DATA.home.wifiName;
+  $('#wifiPass').textContent = DATA.home.wifiPass;
+
+  $('#contactsSub').textContent = 'One tap to call. We\'re reachable in '+DATA.home.destination+' — text is easiest.';
+  $('#contactCards').innerHTML = DATA.contacts.map(c=>{
+    const phoneOk = chunkPhoneOk(c.phone);
+    let acts = '';
+    if(phoneOk){
+      acts += `<a class="btn call" href="tel:${tel(c.phone)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Call</a>`;
+      if(c.text) acts += `<a class="btn" href="sms:${tel(c.phone)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.5 8.5 0 0 1-3.8-.9L3 20l1.9-5.2A8.38 8.38 0 0 1 4 11.5a8.5 8.5 0 0 1 17 0z"/></svg>Text</a>`;
+    }
+    if(c.maps) acts += `<a class="btn" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(c.maps)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Map</a>`;
+    return `<div class="card" style="${c.urgent?'border-color:var(--sos)':''}">
+      <h3 style="${c.urgent?'color:#F0A493':''}">${c.label}</h3>
+      <div class="note" style="margin-top:-4px">${c.sub||''} · ${c.phone}</div>
+      <div class="actions">${acts||'<span class="note">Add a phone number to enable calling.</span>'}</div>
+    </div>`;
+  }).join('');
+
+  const erVet = DATA.contacts.find(c=>c.urgent) || DATA.contacts[0];
+  $('#sosVet').href = chunkPhoneOk(erVet.phone) ? 'tel:'+tel(erVet.phone) : '#';
+}
+
+/* ---------- ended screen + cleanup ---------- */
+function showEnded(){
+  document.body.innerHTML = `
+    <div class="ended-wrap">
+      <div class="mark">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="#16130F"><circle cx="12" cy="15.5" r="5"/><circle cx="6" cy="10" r="2.3"/><circle cx="18" cy="10" r="2.3"/><circle cx="9.5" cy="6.5" r="2.3"/><circle cx="14.5" cy="6.5" r="2.3"/></svg>
+      </div>
+      <h1>This guide has ended</h1>
+      <p>Thanks for taking such good care of Copper &amp; Steel. The sitter guide is no longer active — please reach out to James directly if you need anything.</p>
+      <div class="seam"></div>
+    </div>`;
+}
+function cleanup(){
+  try{ if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())); } }catch(e){}
+  try{ if('caches' in window){ caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))); } }catch(e){}
+}
+
+/* ---------- service worker (offline + install) ---------- */
+function registerSW(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+}
+
+/* ---------- boot ---------- */
+if(EXPIRED){
+  cleanup();
+  showEnded();
+}else{
+  renderApp();
+  registerSW();
 }
 </script>
 </body>
