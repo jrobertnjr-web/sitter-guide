@@ -275,6 +275,11 @@
     </div>
 
     <div class="card">
+      <h3>Weighing the food (Salter scale)</h3>
+      <ul class="clean" id="scale"></ul>
+    </div>
+
+    <div class="card">
       <h3>Walks &amp; potty</h3>
       <ul class="clean" id="walks"></ul>
     </div>
@@ -282,6 +287,11 @@
     <div class="card">
       <h3>Care &amp; quirks</h3>
       <ul class="clean" id="care"></ul>
+    </div>
+
+    <div class="card">
+      <h3>Pet accidents &amp; cleanup</h3>
+      <ul class="clean" id="cleanup"></ul>
     </div>
   </section>
 
@@ -436,6 +446,13 @@ const DATA = {
       'Breaker boxes: one in the Laundry Room, one outside on the west side',
       'Main water shutoff: front yard, west corner',
       'Nothing finicky — the house behaves itself'
+    ],
+    cleanup: [
+      'Accidents happen — just clean them up promptly so nothing sets or soaks in',
+      'CARPET: blot up as much as you can with paper towels (press down, don\'t rub). Spray the enzyme cleaner, let it sit a few minutes, then blot again. Skip hard scrubbing',
+      'LVP / hard floors: wipe it up right away so nothing seeps into the seams — damp paper towel with the floor-safe cleaner, then dry it. No soaking and no steam mop on the LVP',
+      'Cleanup supplies live: on top of the dogs\' kennels (in Marcia\'s office)',
+      'If anything looks off (blood, diarrhea, or repeated accidents), shoot us a text'
     ]
   },
 
@@ -445,7 +462,7 @@ const DATA = {
       name: 'Copper', metal: 'copper',
       facts: [
         ['Personality', 'The obedient one'],
-        ['Meds', '1 Zyrtec with breakfast'],
+        ['Meds', '1 Zyrtec at breakfast · 8-in-1 chew at breakfast & dinner'],
         ['Watch for', 'Redness or excessive itching (allergies)']
       ]
     },
@@ -453,7 +470,7 @@ const DATA = {
       name: 'Steel', metal: 'steel',
       facts: [
         ['Personality', 'The stubborn one'],
-        ['Meds', '1 Zyrtec with breakfast'],
+        ['Meds', '1 Zyrtec at breakfast · 8-in-1 chew at breakfast & dinner'],
         ['Watch for', 'Redness or excessive itching (allergies)']
       ]
     }
@@ -461,12 +478,22 @@ const DATA = {
 
   feeding: [
     'Tucker\'s — Salmon & Pumpkin (kept in the fridge/freezer)',
-    'Copper: 5 oz  ·  Steel: 6 oz',
+    'Copper: 5 oz  ·  Steel: 6 oz — weighed on the Salter scale (steps below)',
     'Twice a day — morning 6–7 AM, evening 5–6 PM',
+    'Frenchie Health Co 8-in-1 health chew: 1 at breakfast, 1 at dinner',
     '1 Zyrtec each, given with breakfast',
     'Fresh water always available, changed daily'
   ],
   feedingNote: 'Never feed: chocolate, grapes/raisins, onion, garlic, xylitol (sugar-free gum), or table scraps. Frenchies have sensitive stomachs.',
+
+  scale: [
+    'Set a bowl (or plate) on the glass scale first',
+    'Press ON/ZERO to turn it on, then press ON/ZERO again — display reads 0 with the bowl on it (that\'s the "tare")',
+    'If it isn\'t showing ounces, tap KG/LB until you see "oz"',
+    'Add Tucker\'s until it reads the right weight — Copper 5 oz, Steel 6 oz',
+    'Re-zero between dogs: leave the bowl, press ON/ZERO to get back to 0',
+    'Press OFF when done. Ignore the ML/FLOZ button — that\'s for liquids'
+  ],
 
   walks: [
     'Two short potty walks a day — COOL hours only (early AM / after sundown)',
@@ -586,8 +613,10 @@ function renderApp(){
   const list = (id,arr)=> $(id).innerHTML = arr.map(x=>`<li>${x}</li>`).join('');
   list('#feeding', DATA.feeding);
   $('#feedingNote').textContent = DATA.feedingNote;
+  list('#scale', DATA.scale);
   list('#walks', DATA.walks);
   list('#care', DATA.care);
+  list('#cleanup', DATA.home.cleanup);
   list('#trash', DATA.home.trash);
   list('#climate', DATA.home.climate);
   list('#mail', DATA.home.mail);
